@@ -41,6 +41,9 @@ export default function Dropdown(element,option) {
   }
   // handlers
   function dismissHandler(e) {
+    if (e.target.getAttribute === undefined)
+        return;
+
     let eventTarget = e.target,
           hasData = eventTarget && (eventTarget.getAttribute('data-toggle') 
                                 || eventTarget.parentNode && eventTarget.parentNode.getAttribute
@@ -73,11 +76,16 @@ export default function Dropdown(element,option) {
         idx = menuItems.indexOf(activeItem);
 
     if ( isMenuItem ) { // navigate up | down
-      idx = isSameElement ? 0 
-                          : key === 38 ? (idx>1?idx-1:0)
-                          : key === 40 ? (idx<menuItems.length-1?idx+1:idx) : idx;
-      menuItems[idx] && setFocus(menuItems[idx]);
+        do {
+          idx = isSameElement ? 0
+                              : key === 38 ? (idx>1?idx-1:0)
+                              : key === 40 ? (idx<menuItems.length-1?idx+1:idx) : idx;
+          if ( idx === 0 || idx === menuItems[length]-1)
+            break;
+        } while ( !menuItems[idx].offsetHeight )
+        menuItems[idx] && setFocus(menuItems[idx]);
     }
+
     if ( (menuItems.length && isMenuItem // menu has items
           || !menuItems.length && (isInsideMenu || isSameElement)  // menu might be a form
           || !isInsideMenu ) // or the focused element is not in the menu at all
@@ -100,7 +108,7 @@ export default function Dropdown(element,option) {
     element.open = true;
     element.removeEventListener('click',clickHandler,false);
     setTimeout(() => {
-      setFocus( menu.getElementsByTagName('INPUT')[0] || element ); // focus the first input item | element
+      setFocus( menu.getElementsByTagName('INPUT')[0] || (menuItems.length && menuItems[0]) || element ); // focus the first input item | element
       toggleDismiss();
       shownCustomEvent = bootstrapCustomEvent('shown', 'dropdown', { relatedTarget: relatedTarget });
       dispatchCustomEvent.call(parent, shownCustomEvent);        
@@ -148,7 +156,10 @@ export default function Dropdown(element,option) {
   menu = queryElement('.dropdown-menu', parent);
 
   Array.from(menu.children).map(child=>{
-    child.children.length && (child.children[0].tagName === 'A' && menuItems.push(child.children[0]));
+    //child.children.length && (child.children[0].tagName === 'A' && menuItems.push(child.children[0]));
+    Array.from(child.children).map(function(child2){
+      child2.tagName === 'A' && menuItems.push(child2);
+    });
     child.tagName === 'A' && menuItems.push(child);
   })
 
